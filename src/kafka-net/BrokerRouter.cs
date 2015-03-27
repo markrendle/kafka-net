@@ -43,6 +43,11 @@ namespace KafkaNet
         }
 
         /// <summary>
+        /// Event fired when a broker is sent data by a client.
+        /// </summary>
+        public event Action<InstrumentationBrokerData> OnInstrumentationDataSentEvent;
+
+        /// <summary>
         /// Select a broker for a specific topic and partitionId.
         /// </summary>
         /// <param name="topic">The topic name to select a broker for.</param>
@@ -182,12 +187,7 @@ namespace KafkaNet
             IKafkaConnection conn;
             if (_brokerConnectionIndex.TryGetValue(partition.LeaderId, out conn))
             {
-                return new BrokerRoute
-                {
-                    Topic = topic,
-                    PartitionId = partition.PartitionId,
-                    Connection = conn
-                };
+                return new BrokerRoute(topic, partition.PartitionId, conn);
             }
 
             return null;
@@ -214,6 +214,7 @@ namespace KafkaNet
                 else
                 {
                     connection = _kafkaOptions.KafkaConnectionFactory.Create(broker.Endpoint, _kafkaOptions.ResponseTimeoutMs, _kafkaOptions.Log);
+                    
                     UpsertConnectionToBrokerConnectionIndex(broker.Broker.BrokerId, connection);
                 }
             }
@@ -224,7 +225,7 @@ namespace KafkaNet
                 _topicIndex.AddOrUpdate(topic.Name, s => localTopic, (s, existing) => localTopic);
             }
         }
-
+        
         private void UpsertConnectionToBrokerConnectionIndex(int brokerId, IKafkaConnection newConnection)
         {
             //associate the connection with the broker id, and add or update the reference

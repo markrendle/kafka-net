@@ -32,7 +32,7 @@ namespace KafkaNet
         /// </summary>
         /// <param name="buffer">The buffer data to send.</param>
         /// <returns>Returns Task handle to the write operation.</returns>
-        Task WriteAsync(byte[] buffer);
+        Task<int> WriteAsync(byte[] buffer);
 
         /// <summary>
         /// Write the buffer data to the server.
@@ -40,6 +40,6 @@ namespace KafkaNet
         /// <param name="buffer">The buffer data to send.</param>
         /// <param name="cancellationToken">A cancellation token which will cancel the request.</param>
         /// <returns>Returns Task handle to the write operation.</returns>
-        Task WriteAsync(byte[] buffer, CancellationToken cancellationToken);
+        Task<int> WriteAsync(byte[] buffer, CancellationToken cancellationToken);
     }
 }

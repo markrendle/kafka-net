@@ -1,13 +1,41 @@
-﻿namespace KafkaNet
+﻿using System;
+using KafkaNet.Model;
+
+namespace KafkaNet
 {
     public class BrokerRoute
     {
-        public string Topic { get; set; }
-        public int PartitionId { get; set; }
-        public IKafkaConnection Connection { get; set; }
+        public event Action<InstrumentationBrokerData> OnInstrumentationBrokerSendCompleted;
+
+        public BrokerRoute(string topic, int partitionId, IKafkaConnection connection)
+        {
+            Topic = topic;
+            PartitionId = partitionId;
+            Connection = connection;
+            connection.OnDataSendCompleted += CollectSendData;
+
+        }
+
+        public string Topic { get; private set; }
+        public int PartitionId { get; private set; }
+        public IKafkaConnection Connection { get; private set; }
+        
         public override string ToString()
         {
             return string.Format("{0} Topic:{1} PartitionId:{2}", Connection.Endpoint.ServeUri, Topic, PartitionId);
+        }
+
+        private void CollectSendData(InstrumentationSendData sendData)
+        {
+            if (OnInstrumentationBrokerSendCompleted != null)
+            {
+                OnInstrumentationBrokerSendCompleted(new InstrumentationBrokerData
+                {
+                    Topic = Topic,
+                    PartitionId = PartitionId,
+                    WireData = sendData
+                });
+            }
         }
 
         #region Equals Override...

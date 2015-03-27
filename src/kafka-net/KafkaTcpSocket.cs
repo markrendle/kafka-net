@@ -16,8 +16,7 @@ namespace KafkaNet
     /// </summary>
     public class KafkaTcpSocket : IKafkaTcpSocket
     {
-        public event ReconnectionAttempDelegate OnReconnectionAttempt;
-        public delegate void ReconnectionAttempDelegate(int attempt);
+        public event Action<int> OnReconnectionAttempt;
 
         private const int DefaultReconnectionTimeout = 500;
         private const int DefaultReconnectionTimeoutMultiplier = 2;
@@ -77,7 +76,7 @@ namespace KafkaNet
         /// </summary>
         /// <param name="buffer">The buffer data to send.</param>
         /// <returns>Returns Task handle to the write operation.</returns>
-        public Task WriteAsync(byte[] buffer)
+        public Task<int> WriteAsync(byte[] buffer)
         {
             return WriteAsync(buffer, _disposeToken.Token);
         }
@@ -89,13 +88,13 @@ namespace KafkaNet
         /// <param name="buffer">The buffer data to send.</param>
         /// <param name="cancellationToken">A cancellation token which will cancel the request.</param>
         /// <returns>Returns Task handle to the write operation.</returns>
-        public Task WriteAsync(byte[] buffer, CancellationToken cancellationToken)
+        public Task<int> WriteAsync(byte[] buffer, CancellationToken cancellationToken)
         {
             return EnsureWriteAsync(buffer, 0, buffer.Length, cancellationToken);
         }
         #endregion
 
-        private async Task EnsureWriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        private async Task<int> EnsureWriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             try
             {
@@ -103,6 +102,7 @@ namespace KafkaNet
 				using (await _writeLock.LockAsync(cancellationToken))
 				{
 					await netStream.WriteAsync(buffer, offset, count, cancellationToken).ConfigureAwait(false);
+				    return buffer.Length;
 				}
             }
             catch

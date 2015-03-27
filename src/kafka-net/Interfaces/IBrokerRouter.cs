@@ -1,11 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
+using KafkaNet.Model;
 using KafkaNet.Protocol;
 
 namespace KafkaNet
 {
     public interface IBrokerRouter : IDisposable
     {
+        /// <summary>
+        /// Event fired when a broker is sent data by a client.
+        /// </summary>
+        event Action<InstrumentationBrokerData> OnInstrumentationDataSentEvent;
+
         /// <summary>
         /// Select a broker for a specific topic and partitionId.
         /// </summary>

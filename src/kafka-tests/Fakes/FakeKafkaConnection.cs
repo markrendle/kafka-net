@@ -24,6 +24,8 @@ namespace kafka_tests.Fakes
         public int OffsetRequestCallCount { get; set; }
         public int FetchRequestCallCount { get; set; }
 
+        public event Action<InstrumentationSendData> OnDataSendCompleted;
+
         public KafkaEndpoint Endpoint { get; private set; }
 
         public bool ReadPolling
@@ -31,7 +33,7 @@ namespace kafka_tests.Fakes
             get { return true; }
         }
 
-        public Task SendAsync(byte[] payload)
+        public Task<int> SendAsync(byte[] payload)
         {
             throw new NotImplementedException();
         }

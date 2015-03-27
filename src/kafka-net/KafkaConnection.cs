@@ -21,6 +21,8 @@ namespace KafkaNet
     /// </summary>
     public class KafkaConnection : IKafkaConnection
     {
+        public event Action<InstrumentationSendData> OnDataSendCompleted;
+
         private const int DefaultResponseTimeoutMs = 30000;
 
         private readonly ConcurrentDictionary<int, AsyncRequestItem> _requestIndex = new ConcurrentDictionary<int, AsyncRequestItem>();
@@ -74,7 +76,7 @@ namespace KafkaNet
         /// </summary>
         /// <param name="payload">kafka protocol formatted byte[] payload</param>
         /// <returns>Task which signals the completion of the upload of data to the server.</returns>
-        public Task SendAsync(byte[] payload)
+        public Task<int> SendAsync(byte[] payload)
         {
             return _client.WriteAsync(payload);
         }
@@ -99,16 +101,20 @@ namespace KafkaNet
                 if (_requestIndex.TryAdd(request.CorrelationId, asyncRequest) == false)
                     throw new ApplicationException("Failed to register request for async response.");
 
-                await SendAsync(request.Encode()).ConfigureAwait(false);
+                var dataSent = await SendAsync(request.Encode()).ConfigureAwait(false);
+
+                TriggerInstrumentationEvent(request, dataSent);
 
                 var response = await asyncRequest.ReceiveTask.Task.ConfigureAwait(false);
 
                 return request.Decode(response).ToList();
             }
 
+            //no response needed ack=0, just send
+            var sent = await SendAsync(request.Encode()).ConfigureAwait(false);
 
-            //no response needed, just send
-            await SendAsync(request.Encode()).ConfigureAwait(false);
+            TriggerInstrumentationEvent(request, sent);
+
             //TODO should this return a response of success for request?
             return new List<T>();
         }
@@ -132,7 +138,7 @@ namespace KafkaNet
             return (_client.Endpoint != null ? _client.Endpoint.GetHashCode() : 0);
         }
         #endregion
-
+        
         private void StartReadStreamPoller()
         {
             //This thread will poll the receive stream for data, parce a message out
@@ -235,6 +241,16 @@ namespace KafkaNet
             {
                 _timeoutSemaphore.Release();
             }
+        }
+
+        private void TriggerInstrumentationEvent<T>(IKafkaRequest<T> request, int messageSize)
+        {
+            if (OnDataSendCompleted != null) OnDataSendCompleted(new InstrumentationSendData
+            {
+                ClientId = request.ClientId,
+                KafkaEndpoint = Endpoint,
+                MessageSize = messageSize
+            });
         }
 
         public void Dispose()

@@ -36,6 +36,7 @@ namespace TestHarness
                 BatchSize = 100,
                 BatchDelayTime = TimeSpan.FromMilliseconds(2000)
             };
+            
 
 
             //take in console read messages

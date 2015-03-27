@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using KafkaNet.Common;
+using KafkaNet.Model;
 using KafkaNet.Protocol;
 
 
@@ -14,6 +15,8 @@ namespace KafkaNet
     /// </summary>
     public class Producer : IMetadataQueries
     {
+        public event Action<InstrumentationSendData> OnInstrumentationSendEvent;
+
         private const int MaxDisposeWaitSeconds = 30;
         private const int DefaultAckTimeoutMS = 1000;
         private const int MaximumAsyncRequests = 100;
